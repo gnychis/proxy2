@@ -12,6 +12,7 @@ import zlib
 import time
 import json
 import re
+import random
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
 from io import BytesIO
@@ -70,11 +71,12 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         with self.lock:
             if not os.path.isfile(certpath):
                 epoch = "%d" % (time.time() * 1000)
-                p1 = Popen(["openssl", "req", "-new", "-key", self.certkey, "-subj", "/CN=%s" % hostname], stdout=PIPE)
-                p2 = Popen(["openssl", "x509", "-req", "-days", "3650", "-CA", self.cacert, "-CAkey", self.cakey, "-set_serial", epoch, "-out", certpath], stdin=p1.stdout, stderr=PIPE)
+                p1 = Popen([r"C:\Program Files\Git\mingw64\bin\openssl", "req", "-new", "-key", self.certkey, "-subj", "/CN=%s" % hostname], stdout=PIPE)
+                p2 = Popen([r"C:\Program Files\Git\mingw64\bin\openssl", "x509", "-req", "-days", "3650", "-CA", self.cacert, "-CAkey", self.cakey, "-set_serial", epoch, "-out", certpath], stdin=p1.stdout, stderr=PIPE)
                 p2.communicate()
 
-        self.wfile.write("{} {} {}\r\n".format(self.protocol_version, 200, 'Connection Established'))
+        # self.wfile.write(("{} {} {}\r\n".format(self.protocol_version, 200, 'Connection Established')).encode())
+        self.send_response(200, 'Connection Established')
         self.end_headers()
 
         self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, server_side=True)
@@ -175,6 +177,8 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
         content_encoding = res.headers.get('Content-Encoding', 'identity')
         res_body_plain = self.decode_content_body(res_body, content_encoding)
+
+        print(res_body_plain)
 
         res_body_modified = self.response_handler(req, req_body, res, res_body_plain)
         if res_body_modified is False:
@@ -335,7 +339,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
             if content_type.startswith('application/json'):
                 try:
-                    json_obj = json.loads(res_body)
+                    json_obj = json.loads(res_body.decode("utf-8"))
                     json_str = json.dumps(json_obj, indent=2)
                     if json_str.count('\n') < 50:
                         res_body_text = json_str
@@ -345,6 +349,10 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 except ValueError:
                     res_body_text = res_body
             elif content_type.startswith('text/html'):
+
+                with open("body_{}.html".format(random.randint(1,10000)), "w") as f:
+                    f.write(res_body.decode("utf-8"))
+
                 m = re.search(r'<title[^>]*>\s*([^<]+?)\s*</title>', res_body.decode("utf-8"), re.I)
                 if m:
                     h = HTMLParser()
