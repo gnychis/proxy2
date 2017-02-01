@@ -178,7 +178,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         content_encoding = res.headers.get('Content-Encoding', 'identity')
         res_body_plain = self.decode_content_body(res_body, content_encoding)
 
-        print(res_body_plain)
+        print(res_body_plain[1:1000])
 
         res_body_modified = self.response_handler(req, req_body, res, res_body_plain)
         if res_body_modified is False:
@@ -350,8 +350,8 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                     res_body_text = res_body
             elif content_type.startswith('text/html'):
 
-                with open("body_{}.html".format(random.randint(1,10000)), "w") as f:
-                    f.write(res_body.decode("utf-8"))
+                # with open("body_{}.html".format(random.randint(1,10000)), "w") as f:
+                #     f.write(res_body.decode("utf-8"))
 
                 m = re.search(r'<title[^>]*>\s*([^<]+?)\s*</title>', res_body.decode("utf-8"), re.I)
                 if m:
